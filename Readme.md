@@ -1,5 +1,5 @@
 ## A Recommendation System Using Clustering and Similarity Mapping
-###Tasks Completed
+### Tasks Completed
 <dl>
 <dt>1. Scrapping for data</dt>
 <dd>- Beautiful Soup</dd>
