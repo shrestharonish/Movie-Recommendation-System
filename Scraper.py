@@ -4,9 +4,35 @@ from bs4 import BeautifulSoup
 import numpy as np
 
 """
-Works for imdb pages recommend using all the pages with
-genres information discards all the ones with less than 3 genres type
+Works for imdb pages recommend using all the pages with genres information discards all the ones with less than 3 genres type
 """
+def post_process(genres):
+    post_process_genres = []
+    for i in genres:
+        i = i.replace("\n", "")
+        i = i.replace(" ","")
+        post_process_genres.append(i)
+    return post_process_genres
+
+
+
+def get_all_genres(soup):
+    result_genres=[]
+    all_genres=soup.find_all("p",{"class":'text-muted'})
+    print(all_genres)
+    for genre in all_genres:
+        genre=str(genre.find_all("span",{"class":"genre"}))
+        if genre == '[]':
+            pass
+        else:
+            genre = genre.replace("<", "=")
+            genre = genre.replace(">", "=")
+            genre = genre.split('=')
+            genre = genre[int((len(genre)/2))]
+            result_genres.append(genre)
+    return result_genres
+
+
 
 def get_all_titles(soup):
     result_topics = []
@@ -20,9 +46,16 @@ def get_all_titles(soup):
         # topic=topic.split('=')
         # topic=topic[int(len(topic)/2)]
         result_topics.append(topic.getText())
-    
+    # print(result_topics)
     return result_topics
 
+
+def check_repeated_comma(x):
+    list_x = x.split(',')
+    if len(list_x)==3:
+        return x
+    else:
+        return np.nan
 
 def data_set(url):
     data_set=pd.DataFrame(columns= ["Movie", "Primary Genre", "Secondary Genre", "Tertiary Genre"])
@@ -35,16 +68,25 @@ def data_set(url):
     ##############################################################################################################
     title = get_all_titles(soup)
     print(title)
-    # genres = get_all_genres(genres)
-    # genres = post_process(genres)
-    # data_set["Movie"]=pdSeries(title)
-    # data_set["Primary Genre"] =pd.Series(genre)
-    # data_set["Primary Genre"] =data_set("Primary Genre").apply(check_repeated_comma)
-    # data_set["Secondary Genre"] = data_set("Secondary Genre").fillno("To Be filled")
+    genres = get_all_genres(soup)
+    genres = post_process(genres)
+    # print(genres)
+    data_set["Movie"]=pd.Series(title)
+    data_set["Primary Genre"] =pd.Series(genres)
+    data_set["Primary Genre"] =data_set["Primary Genre"].apply(check_repeated_comma)
+    data_set["Secondary Genre"] = data_set["Secondary Genre"].fillna("To Be filled")
+    data_set["Tertiary Genre"] = data_set["Tertiary Genre"].fillna("To Be filled")
+
+    data_set = data_set.loc[data_set['Primary Genre']!=np.NaN]
+    data_set=data_set.dropna(how="any")
+    data_set[["Primary Genre", "Secondary Genre", "Tertiary Genre"]]= data_set["Primary Genre"].str.split(',', expand=True)
+    data_set.to_csv("Dataset.csv", mode='a', header=False)
+    
+    print(data_set)
 
 import os
 os.system('cls')
-print("IMDB Scrapper")
+print("=====================================IMDB Scrapper=========================================")
 number_of_pages = int(input("Enter the number of various pages to scrap:"))
 for i in range(number_of_pages):
     url = input("Enter the url: ")
